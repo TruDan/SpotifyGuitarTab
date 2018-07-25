@@ -9,7 +9,7 @@ using System.Windows.Input;
 using CefSharp;
 using Guitarify.Wpf.Util;
 using Guitarify.Wpf.ViewModels.Commands;
-using SpotifyAPI.Local.Models;
+using SpotifyAPI.Web.Models;
 
 namespace Guitarify.Wpf.ViewModels
 {
@@ -19,7 +19,7 @@ namespace Guitarify.Wpf.ViewModels
         private bool _hasFavouriteTab;
         private string _trackId;
         private string _trackTabUrl;
-        private Track _track;
+        private FullTrack _track;
 
         public bool HasFavouriteTab => FavouriteTabEntry != null;
         public FavouriteTabEntry FavouriteTabEntry
@@ -35,7 +35,7 @@ namespace Guitarify.Wpf.ViewModels
             }
         }
 
-        public Track Track
+        public FullTrack Track
         {
             get => _track;
             set
@@ -57,7 +57,7 @@ namespace Guitarify.Wpf.ViewModels
             }
         }
 
-        public string TrackId => Track?.TrackResource.Uri;
+        public string TrackId => Track?.Uri;
         public string TrackTabUrl => FavouriteTabEntry?.TabUrl ?? GetTrackUrl(Track);
 
         public ICommand ToggleFavouriteTabCommand => new ParameterizedDelegateCommand((currentBrowserAddress) =>
@@ -91,12 +91,12 @@ namespace Guitarify.Wpf.ViewModels
                                                              RegexOptions.Compiled | RegexOptions.CultureInvariant);
         private static string SearchUrl   = "https://www.ultimate-guitar.com/search.php?band_name=%artist%&song_name=%track%";
 
-        private string GetTrackUrl(Track track)
+        private string GetTrackUrl(FullTrack track)
         {
             if (track == null) return null;
 
-            var artistName = WebUtility.UrlEncode(SanitiseSearchString(track.ArtistResource.Name));
-            var trackName  = WebUtility.UrlEncode(SanitiseSearchString(track.TrackResource.Name));
+            var artistName = WebUtility.UrlEncode(SanitiseSearchString(track.Artists[0].Name));
+            var trackName  = WebUtility.UrlEncode(SanitiseSearchString(track.Name));
             
             var url = SearchUrl.Replace("%artist%", artistName).Replace("%track%", trackName);
             return url;

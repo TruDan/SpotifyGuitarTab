@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -8,8 +9,10 @@ using System.Windows;
 using System.Windows.Threading;
 using Guitarify.Wpf.ViewModels;
 using SpotifyAPI;
-using SpotifyAPI.Local;
-using SpotifyAPI.Local.Models;
+using SpotifyAPI.Web;
+using SpotifyAPI.Web.Auth;
+using SpotifyAPI.Web.Enums;
+using SpotifyAPI.Web.Models;
 
 namespace Guitarify.Wpf.Services
 {
@@ -21,67 +24,61 @@ namespace Guitarify.Wpf.Services
             get { return _viewModel ?? (_viewModel = new SpotifyPlayerViewModel()); }
         }
 
-        public static SpotifyLocalAPI Spotify => _spotifyLocal;
+        public static SpotifyWebAPI Spotify => _spotify;
 
-        private static SpotifyLocalAPI _spotifyLocal;
+        private static WebAPIFactory _spotifyApiFactory;
+        private static SpotifyWebAPI _spotify;
+        private static readonly string _clientId;
+        private static SpotifyWatcher _watcher;
 
         static SpotifyService()
         {
-            _spotifyLocal = new SpotifyLocalAPI(new SpotifyLocalAPIConfig()
-            {
-                ProxyConfig = new ProxyConfig()
-            });
+            _clientId = ConfigurationManager.AppSettings["SpotifyAPI.ClientID"];
 
-            _spotifyLocal.OnPlayStateChange += SpotifyLocalOnOnPlayStateChange;
-            _spotifyLocal.OnTrackChange += SpotifyLocalOnOnTrackChange;
-            _spotifyLocal.OnTrackTimeChange += SpotifyLocalOnOnTrackTimeChange;
-            _spotifyLocal.OnVolumeChange += SpotifyLocalOnOnVolumeChange;
+            _spotifyApiFactory = new WebAPIFactory("http://localhost/", 8000, _clientId, Scope.UserReadPrivate | Scope.Streaming | Scope.UserModifyPlaybackState | Scope.UserLibraryRead, new ProxyConfig());
+
+            //_spotify = new SpotifyWebAPI(new ProxyConfig());
+
+
+
+            //_spotify.OnPlayStateChange += SpotifyLocalOnOnPlayStateChange;
+            //_spotify.OnTrackChange += SpotifyLocalOnOnTrackChange;
+            //_spotify.OnTrackTimeChange += SpotifyLocalOnOnTrackTimeChange;
+            //_spotify.OnVolumeChange += SpotifyLocalOnOnVolumeChange;
 
             TryConnect();
         }
 
         private static async void TryConnect()
         {
-            if (!SpotifyLocalAPI.IsSpotifyInstalled())
+            try
             {
-                MessageBox.Show(@"Spotify is not installed!");
+                _spotify = await _spotifyApiFactory.GetWebApi(true);
+                _watcher = new SpotifyWatcher(_spotify);
+
+                //_watcher.PlayStateChanged += SpotifyLocalOnOnPlayStateChange;
+                //_watcher.TrackChanged += SpotifyLocalOnOnTrackChange;
+                //_watcher.TrackTimeChanged += SpotifyLocalOnOnTrackTimeChange;
+                //_watcher.VolumeChanged += SpotifyLocalOnOnVolumeChange;
+
+                _watcher.Tick += SpotifyLocalOnTick;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(@"Error authenticating to Spotify API");
+                throw;
+            }
+
+            if (_spotify == null)
                 return;
-            }
-
-            if (!SpotifyLocalAPI.IsSpotifyRunning())
-            {
-                if (MessageBox.Show(@"Spotify is not running! Launch now?", @"Spotify", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
-                {
-                    SpotifyLocalAPI.RunSpotify();
-                }
-
-                return;
-            }
-
-            if (!SpotifyLocalAPI.IsSpotifyWebHelperRunning())
-            {
-                if (MessageBox.Show(@"Spotify web helper is not running! Launch now?", @"Spotify", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
-                {
-                    SpotifyLocalAPI.RunSpotifyWebHelper();
-                }
-
-                return;
-            }
-
-            if (_spotifyLocal.Connect())
-            {
-                ViewModel.UpdateStatus();
-                _spotifyLocal.ListenForEvents = true;
-            }
-            else
-            {
-                if (MessageBox.Show(@"Could not connect to local spotify client. Retry?", @"Spotify", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
-                {
-                    TryConnect();
-                }
-            }
         }
 
+        public static void Play() => _spotify.ResumePlayback();
+        public static void Pause() => _spotify.PausePlayback();
+
+        public static void Previous() => _spotify.SkipPlaybackToPrevious();
+        public static void Next() => _spotify.SkipPlaybackToNext();
+        
         private static void SpotifyLocalOnOnVolumeChange(object sender, VolumeChangeEventArgs e)
         {
 
@@ -89,7 +86,7 @@ namespace Guitarify.Wpf.Services
 
         private static void SpotifyLocalOnOnTrackTimeChange(object sender, TrackTimeChangeEventArgs e)
         {
-            _viewModel.DispatchIfNessecary(() => { _viewModel.PlayPosition = TimeSpan.FromSeconds(e.TrackTime); });
+            _viewModel.DispatchIfNessecary(() => { _viewModel.PlayPosition = e.TrackTime; });
         }
 
         private static void SpotifyLocalOnOnTrackChange(object sender, TrackChangeEventArgs e)
@@ -97,12 +94,138 @@ namespace Guitarify.Wpf.Services
             _viewModel.DispatchIfNessecary(() => { _viewModel.CurrentTrack = e.NewTrack; });
         }
 
-        private static void SpotifyLocalOnOnPlayStateChange(object sender, PlayStateEventArgs e)
+        private static void SpotifyLocalOnOnPlayStateChange(object sender, PlayStateChangeEventArgs e)
         {
             _viewModel.DispatchIfNessecary(() =>
             {
-                _viewModel.UpdateStatus();
+                _viewModel.UpdateStatus(_watcher.Context);
             });
+        }
+        private static void SpotifyLocalOnTick(object sender, EventArgs e)
+        {
+            _viewModel.DispatchIfNessecary(() =>
+            {
+                _viewModel.UpdateStatus(_watcher.Context);
+            });
+        }
+
+        class SpotifyWatcher : IDisposable
+        {
+            public event EventHandler<VolumeChangeEventArgs> VolumeChanged;
+            public event EventHandler<TrackTimeChangeEventArgs> TrackTimeChanged;
+            public event EventHandler<TrackChangeEventArgs> TrackChanged;
+            public event EventHandler<PlayStateChangeEventArgs> PlayStateChanged;
+
+            public event EventHandler Tick; 
+
+            private SpotifyWebAPI _api;
+            private Timer _timer;
+
+            public PlaybackContext Context => _currentContext;
+            private PlaybackContext _currentContext, _previousContext;
+
+            public SpotifyWatcher(SpotifyWebAPI api, int tickInterval = 250)
+            {
+                _api = api;
+                _timer = new Timer(o => DoTick(), null, tickInterval, tickInterval);
+            }
+
+            private void DoTick()
+            {
+                _previousContext = _currentContext;
+                _currentContext = _api.GetPlayback();
+
+                if (_currentContext == null) return;
+
+                // Check volume change
+                if (CompareContext(c => c.Device.VolumePercent, out var oldVolume, out var newVolume))
+                {
+                    // Volume Changed
+                    VolumeChanged?.Invoke(this, new VolumeChangeEventArgs(oldVolume, newVolume));
+                }
+
+                if (CompareContext(c => c.Item, out var oldTrack, out var newTrack))
+                {
+                    // Track Changed
+                    TrackChanged?.Invoke(this, new TrackChangeEventArgs(oldTrack, newTrack));
+                }
+
+                if (CompareContext(c => c.IsPlaying))
+                {
+                    // Playstate Changed
+                    PlayStateChanged?.Invoke(this, new PlayStateChangeEventArgs(_currentContext.IsPlaying));
+                }
+
+                if (CompareContext(c => c.ProgressMs, out var oldProgressMs, out var newProgressMs))
+                {
+                    // Track Time Changed
+                    TrackTimeChanged?.Invoke(this, new TrackTimeChangeEventArgs(TimeSpan.FromMilliseconds(newProgressMs)));
+                }
+
+                Tick?.Invoke(this, new EventArgs());
+            }
+
+            private bool CompareContext(Func<PlaybackContext, object> objectFunc)
+            {
+                return CompareContext(objectFunc, out var oldValue, out var newValue);
+            }
+            private bool CompareContext<T>(Func<PlaybackContext, T> objectFunc, out T oldValue, out T newValue)
+            {
+                oldValue = _previousContext != null ? objectFunc(_previousContext) : default(T);
+                newValue = _currentContext != null ? objectFunc(_currentContext) : default(T);
+
+                return (!object.Equals(oldValue, newValue));
+            }
+
+            public void Dispose()
+            {
+                _timer.Change(Timeout.Infinite, Timeout.Infinite);
+                _timer.Dispose();
+            }
+        }
+    }
+
+    public class VolumeChangeEventArgs : EventArgs
+    {
+        public double OldVolume { get; }
+        public double NewVolume { get; }
+
+        internal VolumeChangeEventArgs(double oldVolume, double newVolume)
+        {
+            OldVolume = oldVolume;
+            NewVolume = newVolume;
+        }
+    }
+
+    public class TrackChangeEventArgs : EventArgs
+    {
+        public FullTrack OldTrack { get; }
+        public FullTrack NewTrack { get; }
+
+        internal TrackChangeEventArgs(FullTrack oldTrack, FullTrack newTrack)
+        {
+            OldTrack = oldTrack;
+            NewTrack = newTrack;
+        }
+    }
+
+    public class PlayStateChangeEventArgs : EventArgs
+    {
+        public bool Playing { get; }
+
+        internal PlayStateChangeEventArgs(bool playing)
+        {
+            Playing = playing;
+        }
+    }
+
+    public class TrackTimeChangeEventArgs : EventArgs
+    {
+        public TimeSpan TrackTime { get; }
+
+        internal TrackTimeChangeEventArgs(TimeSpan trackTime)
+        {
+            TrackTime = trackTime;
         }
     }
 }

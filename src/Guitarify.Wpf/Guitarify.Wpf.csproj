@@ -113,6 +113,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
+    <Reference Include="System.Configuration" />
     <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Xml" />
@@ -638,6 +639,8 @@
     </PublishFile>
   </ItemGroup>
   <ItemGroup>
+    <None Include="Resources\NoAlbumArt.png" />
+    <None Include="Resources\NoAlbumArt.svg.bmp" />
     <Resource Include="Resources\AppIcon.ico" />
     <Content Include="Resources\jQuery-slim.js" />
   </ItemGroup>
