@@ -8,14 +8,13 @@ using System.Threading.Tasks;
 using System.Windows;
 using CefSharp;
 
-namespace SpotifyGuitarTab
+namespace Guitarify.Wpf
 {
     /// <summary>
     /// Interaction logic for App.xaml
     /// </summary>
     public partial class App : Application
     {
-
         public App()
         {
             var settings = new CefSettings()
@@ -23,10 +22,10 @@ namespace SpotifyGuitarTab
                 CachePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                                          "Guitarify\\Cache"),
                 PersistSessionCookies = true,
+                RemoteDebuggingPort = 8088
             };
 
             Cef.Initialize(settings, performDependencyCheck: true, browserProcessHandler: null);
         }
-
     }
 }

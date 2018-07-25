@@ -13,14 +13,14 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace SpotifyGuitarTab
+namespace Guitarify.Wpf.Views
 {
     /// <summary>
-    /// Interaction logic for MainWindow.xaml
+    /// Interaction logic for TabViewerView.xaml
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class TabViewerView : UserControl
     {
-        public MainWindow()
+        public TabViewerView()
         {
             InitializeComponent();
         }

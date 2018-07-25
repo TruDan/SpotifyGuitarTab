@@ -1,0 +1,314 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+    xmlns:sys="clr-namespace:System;assembly=mscorlib"
+    xmlns:controls="clr-namespace:Guitarify.Wpf.Controls"
+    xmlns:converters="clr-namespace:Guitarify.Wpf.Converters"
+    xmlns:viewModels="clr-namespace:Guitarify.Wpf.ViewModels"
+    xmlns:services="clr-namespace:Guitarify.Wpf.Services"
+    mc:Ignorable="d">
+
+    <FontFamily x:Key="SpotifyFontFamily">pack://application:,,,/Resources/#CircularSpUIv3T_Light</FontFamily>
+    <FontFamily x:Key="SpotifyIconFontFamily">pack://application:,,,/Resources/#spoticon_regular_2</FontFamily>
+    <sys:Double x:Key="SpotifyFontSize">14</sys:Double>
+    <sys:Double x:Key="SpotifySmallFontSize">12</sys:Double>
+
+    <Geometry x:Key="IconControllerNextGeometry">M12.244,9.52L5.041,4.571C4.469,4.188,4,4.469,4,5.196v9.609c0,0.725,0.469,1.006,1.041,0.625l7.203-4.951 c0,0,0.279-0.199,0.279-0.478C12.523,9.721,12.244,9.52,12.244,9.52z M14,4h1c0.553,0,1,0.048,1,0.6v10.8c0,0.552-0.447,0.6-1,0.6 h-1c-0.553,0-1-0.048-1-0.6V4.6C13,4.048,13.447,4,14,4z</Geometry>
+    <Geometry x:Key="IconControllerPreviousGeometry">M14.959,4.571L7.756,9.52c0,0-0.279,0.201-0.279,0.481s0.279,0.479,0.279,0.479l7.203,4.951 C15.531,15.811,16,15.53,16,14.805V5.196C16,4.469,15.531,4.188,14.959,4.571z M6,4H5C4.447,4,4,4.048,4,4.6v10.8 C4,15.952,4.447,16,5,16h1c0.553,0,1-0.048,1-0.6V4.6C7,4.048,6.553,4,6,4z</Geometry>
+    <Geometry x:Key="IconControllerPlayGeometry">m -25.513393 148.83356 c 0 0.0791 -0.0807 0.136 -0.0807 0.136 l -2.265098 1.40308 c -0.1651 0.10822 -0.300037 0.0281 -0.300037 -0.177 v -2.72442 c 0 -0.20558 0.134937 -0.28522 0.300302 -0.17727 l 2.265098 1.40362 c -2.65e-4 0 0.08043 0.0569 0.08043 0.13599 z</Geometry>
+    <Geometry x:Key="IconControllerPauseGeometry">M15,3h-2c-0.553,0-1,0.048-1,0.6v12.8c0,0.552,0.447,0.6,1,0.6h2c0.553,0,1-0.048,1-0.6V3.6 C16,3.048,15.553,3,15,3z M7,3H5C4.447,3,4,3.048,4,3.6v12.8C4,16.952,4.447,17,5,17h2c0.553,0,1-0.048,1-0.6V3.6 C8,3.048,7.553,3,7,3z</Geometry>
+
+    <Style x:Key="SpotifyButton" TargetType="{x:Type ButtonBase}">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="10" />
+        <Setter Property="Foreground" Value="{DynamicResource IdealForegroundColorBrush}" />
+
+        <Setter Property="FontFamily" Value="{DynamicResource SpotifyIconFontFamily}" />
+        <Setter Property="TextElement.FontFamily" Value="{DynamicResource SpotifyIconFontFamily}" />
+        <Setter Property="FontSize" Value="16" />
+
+        <Style.Triggers>
+            <Trigger Property="IsEnabled" Value="True">
+                <Setter Property="Foreground" Value="{DynamicResource IdealForegroundColorBrush}" />
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Foreground" Value="{DynamicResource IdealForegroundDisabledBrush}" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+    <Style x:Key="SpotifyPlayButton" TargetType="{x:Type ToggleButton}" BasedOn="{StaticResource SpotifyButton}">
+        <Setter Property="Foreground" Value="{DynamicResource IdealForegroundColorBrush}" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{DynamicResource IdealForegroundColorBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Width" Value="32" />
+        <Setter Property="Height" Value="32" />
+        <Setter Property="Margin" Value="15,10" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ToggleButton}">
+                    <Grid>
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal" />
+                                <VisualState x:Name="MouseOver" >
+                                    <Storyboard>
+                                        <DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" Storyboard.TargetName="Border">
+                                            <EasingDoubleKeyFrame KeyTime="0" Value="1.1"/>
+                                        </DoubleAnimationUsingKeyFrames>
+                                        <DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleY)" Storyboard.TargetName="Border">
+                                            <EasingDoubleKeyFrame KeyTime="0" Value="1.1"/>
+                                        </DoubleAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="Pressed" />
+                            </VisualStateGroup>
+                            <VisualStateGroup x:Name="CheckStates">
+                                <VisualState x:Name="Checked" />
+                                <VisualState x:Name="Unchecked" />
+                                <VisualState x:Name="Indeterminate" />
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                        <Border x:Name="Border"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="16"
+                                Padding="{TemplateBinding Padding}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                BorderBrush="{TemplateBinding BorderBrush}" 
+                                RenderTransformOrigin="0.5,0.5">
+                            <Border.RenderTransform>
+                                <TransformGroup>
+                                    <ScaleTransform />
+                                </TransformGroup>
+                            </Border.RenderTransform>
+
+                        </Border>
+                        <Path x:Name="Glyph" Stretch="Uniform" Width="10" Height="10" RenderTransformOrigin="0.5,0.5" Fill="{TemplateBinding Foreground}" IsHitTestVisible="False" VerticalAlignment="Center" HorizontalAlignment="Center" />
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter Property="Data" TargetName="Glyph" Value="{DynamicResource IconControllerPauseGeometry}"/>
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="False">
+                            <Setter Property="Data" TargetName="Glyph" Value="{DynamicResource IconControllerPlayGeometry}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="MinWidth" Value="32"/>
+        <Setter Property="MinHeight" Value="32"/>
+        <Style.Triggers>
+            <Trigger Property="IsEnabled" Value="True">
+                <Setter Property="Foreground" Value="{DynamicResource IdealForegroundColorBrush}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource IdealForegroundColorBrush}" />
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Foreground" Value="{DynamicResource IdealForegroundDisabledBrush}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource IdealForegroundDisabledBrush}" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style TargetType="{x:Type controls:SpotifyPlayer}">
+        <Setter Property="FontFamily" Value="{StaticResource SpotifyFontFamily}" />
+        <Setter Property="MinWidth" Value="800" />
+        <Setter Property="Height" Value="90"/>
+        <Setter Property="MinHeight" Value="90"/>
+        <Setter Property="MaxHeight" Value="90"/>
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+
+        <Setter Property="Background" Value="{DynamicResource ControlBackgroundBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource IdealForegroundColorBrush}"/>
+
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type controls:SpotifyPlayer}">
+                    <ControlTemplate.Resources>
+                        <Style x:Key="SpotifyText" TargetType="{x:Type TextBlock}">
+                            <Setter Property="Padding" Value="2" />
+                            <Setter Property="FontSize" Value="{DynamicResource SpotifyFontSize}" />
+                            <Setter Property="FontFamily" Value="{DynamicResource SpotifyFontFamily}" />
+                            <Setter Property="Foreground" Value="{DynamicResource IdealForegroundColorBrush}" />
+                            <Setter Property="FontWeight" Value="ExtraLight"/>
+                            <Setter Property="LineHeight" Value="20"/>
+                        </Style>
+                        <Style x:Key="SpotifySmallText" TargetType="{x:Type TextBlock}">
+                            <Setter Property="Padding" Value="2" />
+                            <Setter Property="FontSize" Value="{DynamicResource SpotifySmallFontSize}" />
+                            <Setter Property="FontFamily" Value="{DynamicResource SpotifyFontFamily}" />
+                            <Setter Property="Foreground" Value="{DynamicResource IdealForegroundDisabledBrush}" />
+                            <Setter Property="FontWeight" Value="ExtraLight"/>
+                        </Style>
+                    </ControlTemplate.Resources>
+                    
+                    <Border x:Name="TemplateRoot"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}" 
+                            DataContext="{x:Static services:SpotifyService.ViewModel}"
+                            
+                            d:DataContext="{d:DesignInstance Type={x:Type viewModels:SpotifyPlayerViewModel}}" Padding="1,0">
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="2*" MaxWidth="320" />
+                                <ColumnDefinition Width="5*" />
+                                <ColumnDefinition Width="2*" MaxWidth="320" />
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Row="0" Grid.Column="0"
+                                Orientation="Horizontal" Margin="15">
+
+                                <Border Background="{StaticResource SemiTransparentGreyBrush}" Width="56" Height="56" Margin="0,0,8,0" >
+                                    <Image x:Name="PART_TrackAlbumArt" Source="{Binding AlbumArtImage}" />
+                                </Border>
+
+                                <StackPanel Orientation="Vertical" VerticalAlignment="Center">
+                                    <TextBlock Style="{DynamicResource SpotifyText}" FontSize="14"
+                                               Text="{Binding TrackName}" />
+                                    <TextBlock Style="{DynamicResource SpotifySmallText}" FontSize="11"
+                                               Text="{Binding ArtistName}" />
+                                </StackPanel>
+
+                            </StackPanel>
+
+                            <Grid Grid.Row="0" Grid.Column="1" Margin="5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="30" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="30" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="3*" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center" Orientation="Horizontal">
+                                    <Button x:Name="PART_SkipPrevButton"
+                                            Style="{DynamicResource SpotifyButton}"
+                                            Command="{Binding PrevCommand}">
+                                        <Grid>
+                                            <Path Data="{StaticResource IconControllerPreviousGeometry}"
+                                                  Stretch="Uniform" Width="10" Height="10" RenderTransformOrigin="0.5,0.5"
+                                                  Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType={x:Type Button}}}" />
+                                        </Grid>
+                                    </Button>
+                                    <ToggleButton x:Name="PART_PlayButton" 
+                                                  Style="{DynamicResource SpotifyPlayButton}" Command="{Binding PlayCommand}" IsChecked="{Binding IsPlaying, Mode=OneWay}" />
+                                    <Button x:Name="PART_SkipNextButton" 
+                                            Style="{DynamicResource SpotifyButton}"
+                                            Command="{Binding SkipCommand}">
+                                        <Grid>
+                                            <Path Data="{StaticResource IconControllerNextGeometry}"
+                                                  Stretch="Uniform" Width="10" Height="10" RenderTransformOrigin="0.5,0.5"
+                                                  Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType={x:Type Button}}}" />
+                                        </Grid>
+                                    </Button>
+
+                                </StackPanel>
+
+                                <TextBlock Grid.Row="1" Grid.Column="0" 
+                                           VerticalAlignment="Center" 
+                                           HorizontalAlignment="Right"
+                                           TextAlignment="Right"
+                                           Style="{DynamicResource SpotifySmallText}">
+                                    <TextBlock.Text>
+                                        <MultiBinding StringFormat="{}{0:0}:{1:00}">
+                                            <Binding Path="PlayPosition.Minutes" />
+                                            <Binding Path="PlayPosition.Seconds" />
+                                        </MultiBinding>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                                <TextBlock Grid.Row="1" Grid.Column="2" 
+                                           VerticalAlignment="Center" 
+                                           HorizontalAlignment="Left"
+                                           TextAlignment="Left"
+                                           Style="{DynamicResource SpotifySmallText}">
+                                    <TextBlock.Text>
+                                        <MultiBinding StringFormat="{}{0:0}:{1:00}">
+                                            <Binding Path="TrackLength.Minutes" />
+                                            <Binding Path="TrackLength.Seconds" />
+                                        </MultiBinding>
+                                    </TextBlock.Text>
+                                </TextBlock>
+
+                                <ProgressBar x:Name="PART_SeekBar"
+                                             Grid.Row="1" Grid.Column="1"
+                                             Margin="9,4,9,5"
+                                             Height="4" 
+                                             BorderThickness="0"
+                                             Background="{StaticResource SemiTransparentGreyBrush}"
+                                             Foreground="{StaticResource SemiTransparentWhiteBrush}"
+                                             Value="{Binding PlayPosition.TotalMilliseconds, Mode=OneWay}"
+                                             Maximum="{Binding TrackLength.TotalMilliseconds, Mode=OneWay}" 
+                                             Style="{DynamicResource SpotifySeekBarStyle}"/>
+
+                            </Grid>
+                        </Grid>
+
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="SpotifySeekBarStyle" TargetType="{x:Type ProgressBar}">
+        <Setter Property="Background" Value="{DynamicResource ControlBackgroundBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource IdealForegroundColorBrush}"/>
+
+        <Setter Property="Height" Value="4" />
+
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ProgressBar}">
+                    <ControlTemplate.Resources>
+                        <Storyboard x:Key="Storyboard1"/>
+                    </ControlTemplate.Resources>
+                    <Grid x:Name="TemplateRoot" Background="{TemplateBinding Background}" d:DesignWidth="400" d:DesignHeight="4">
+                        <Rectangle Width="{Binding ActualWidth, ElementName=TemplateRoot}" 
+                                   Height="{Binding ActualHeight, ElementName=TemplateRoot}" 
+                                   Fill="{TemplateBinding Background}" RadiusX="2" RadiusY="2" />
+
+                        <DockPanel x:Name="PART_Track" LastChildFill="False" Margin="0">
+                            <Rectangle x:Name="PART_Indicator" 
+                                       Width="{Binding ActualWidth, ElementName=PART_Indicator}" 
+                                       Height="{Binding ActualHeight, ElementName=PART_Track}" 
+                                       Fill="{TemplateBinding Foreground}" RadiusX="2" RadiusY="2" />
+                            <Ellipse x:Name="ellipse" Fill="#FFF4F4F5" Height="{Binding ActualHeight, ElementName=PART_Track}" Opacity="0" VerticalAlignment="Top" Width="{Binding ActualHeight, ElementName=PART_Track}" RenderTransformOrigin="0.5,0.5">
+                                <Ellipse.RenderTransform>
+                                    <TransformGroup>
+                                        <ScaleTransform ScaleX="3" ScaleY="3" CenterX="1" CenterY="0"/>
+                                        <SkewTransform/>
+                                        <RotateTransform/>
+                                        <TranslateTransform/>
+                                    </TransformGroup>
+                                </Ellipse.RenderTransform>
+                            </Ellipse>
+
+                        </DockPanel>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="Orientation" Value="Vertical">
+                            <Setter Property="LayoutTransform" TargetName="TemplateRoot">
+                                <Setter.Value>
+                                    <RotateTransform Angle="-90"/>
+                                </Setter.Value>
+                            </Setter>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Trigger.Setters>
+                                <Setter Property="Opacity" TargetName="ellipse" Value="1" />
+                                <Setter Property="Fill" TargetName="PART_Indicator" Value="{DynamicResource AccentColorBrush}" />
+                            </Trigger.Setters>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+</ResourceDictionary>
