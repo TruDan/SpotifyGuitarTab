@@ -18,6 +18,8 @@ namespace Guitarify.Wpf.Services
 {
     public static class SpotifyService
     {
+        private const Scope SpotifyScopes = Scope.UserReadPrivate | Scope.Streaming | Scope.UserModifyPlaybackState | Scope.UserLibraryRead;
+
         private static SpotifyPlayerViewModel _viewModel;
         public static SpotifyPlayerViewModel ViewModel
         {
@@ -35,7 +37,7 @@ namespace Guitarify.Wpf.Services
         {
             _clientId = ConfigurationManager.AppSettings["SpotifyAPI.ClientID"];
 
-            _spotifyApiFactory = new WebAPIFactory("http://localhost/", 8000, _clientId, Scope.UserReadPrivate | Scope.Streaming | Scope.UserModifyPlaybackState | Scope.UserLibraryRead, new ProxyConfig());
+            _spotifyApiFactory = new WebAPIFactory("http://localhost/", 8000, _clientId, SpotifyScopes, Timeout.InfiniteTimeSpan, new ProxyConfig());
 
             //_spotify = new SpotifyWebAPI(new ProxyConfig());
 
@@ -78,7 +80,7 @@ namespace Guitarify.Wpf.Services
 
         public static void Previous() => _spotify.SkipPlaybackToPrevious();
         public static void Next() => _spotify.SkipPlaybackToNext();
-        
+
         private static void SpotifyLocalOnOnVolumeChange(object sender, VolumeChangeEventArgs e)
         {
 
@@ -116,7 +118,7 @@ namespace Guitarify.Wpf.Services
             public event EventHandler<TrackChangeEventArgs> TrackChanged;
             public event EventHandler<PlayStateChangeEventArgs> PlayStateChanged;
 
-            public event EventHandler Tick; 
+            public event EventHandler Tick;
 
             private SpotifyWebAPI _api;
             private Timer _timer;
@@ -124,7 +126,7 @@ namespace Guitarify.Wpf.Services
             public PlaybackContext Context => _currentContext;
             private PlaybackContext _currentContext, _previousContext;
 
-            public SpotifyWatcher(SpotifyWebAPI api, int tickInterval = 250)
+            public SpotifyWatcher(SpotifyWebAPI api, int tickInterval = 500)
             {
                 _api = api;
                 _timer = new Timer(o => DoTick(), null, tickInterval, tickInterval);
@@ -133,36 +135,53 @@ namespace Guitarify.Wpf.Services
             private void DoTick()
             {
                 _previousContext = _currentContext;
-                _currentContext = _api.GetPlayback();
-
-                if (_currentContext == null) return;
-
-                // Check volume change
-                if (CompareContext(c => c.Device.VolumePercent, out var oldVolume, out var newVolume))
+                try
                 {
-                    // Volume Changed
-                    VolumeChanged?.Invoke(this, new VolumeChangeEventArgs(oldVolume, newVolume));
+                    _currentContext = _api.GetPlayback();
+                }
+                catch (SpotifyWebApiException ex)
+                {
+                    MessageBox.Show(ex.Message);
+                    Thread.Sleep(5000);
+                    return;
                 }
 
-                if (CompareContext(c => c.Item, out var oldTrack, out var newTrack))
+                try
                 {
-                    // Track Changed
-                    TrackChanged?.Invoke(this, new TrackChangeEventArgs(oldTrack, newTrack));
-                }
+                    if (_currentContext == null) return;
 
-                if (CompareContext(c => c.IsPlaying))
-                {
-                    // Playstate Changed
-                    PlayStateChanged?.Invoke(this, new PlayStateChangeEventArgs(_currentContext.IsPlaying));
-                }
+                    // Check volume change
+                    if (CompareContext(c => c.Device?.VolumePercent, out var oldVolume, out var newVolume))
+                    {
+                        // Volume Changed
+                        VolumeChanged?.Invoke(this,
+                                              new VolumeChangeEventArgs(oldVolume.GetValueOrDefault(),
+                                                                        newVolume.GetValueOrDefault()));
+                    }
 
-                if (CompareContext(c => c.ProgressMs, out var oldProgressMs, out var newProgressMs))
-                {
-                    // Track Time Changed
-                    TrackTimeChanged?.Invoke(this, new TrackTimeChangeEventArgs(TimeSpan.FromMilliseconds(newProgressMs)));
-                }
+                    if (CompareContext(c => c.Item, out var oldTrack, out var newTrack))
+                    {
+                        // Track Changed
+                        TrackChanged?.Invoke(this, new TrackChangeEventArgs(oldTrack, newTrack));
+                    }
 
-                Tick?.Invoke(this, new EventArgs());
+                    if (CompareContext(c => c.IsPlaying))
+                    {
+                        // Playstate Changed
+                        PlayStateChanged?.Invoke(this, new PlayStateChangeEventArgs(_currentContext.IsPlaying));
+                    }
+
+                    if (CompareContext(c => c.ProgressMs, out var oldProgressMs, out var newProgressMs))
+                    {
+                        // Track Time Changed
+                        TrackTimeChanged?.Invoke(this,
+                                                 new TrackTimeChangeEventArgs(TimeSpan
+                                                                                  .FromMilliseconds(newProgressMs)));
+                    }
+
+                    Tick?.Invoke(this, new EventArgs());
+                }
+                catch { }
             }
 
             private bool CompareContext(Func<PlaybackContext, object> objectFunc)

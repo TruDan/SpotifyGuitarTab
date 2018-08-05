@@ -140,8 +140,37 @@
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Row="0" Grid.Column="0" Background="{DynamicResource ControlBorderBrush}">
+
+                <ListView x:Name="SearchResultsList" SelectionMode="Single" SelectionChanged="SearchResultsList_OnSelectionChanged">
+                    <ListView.View>
+                        <GridView>
+                            <GridViewColumn Header="Name" DisplayMemberBinding="{Binding TrackName}" />
+                            <GridViewColumn Header="Rating" DisplayMemberBinding="{Binding Rating}" />
+                            <GridViewColumn Header="Type" DisplayMemberBinding="{Binding Type}" />
+                        </GridView>
+                    </ListView.View>
+                    <ListView.GroupStyle>
+                        <GroupStyle>
+                            <GroupStyle.HeaderTemplate>
+                                <DataTemplate>
+                                    <TextBlock FontWeight="Bold" Text="{Binding Name}" />
+                                </DataTemplate>
+                            </GroupStyle.HeaderTemplate>
+                        </GroupStyle>
+                    </ListView.GroupStyle>
+                </ListView>
+
+            </Border>
+
             <Border  
                 Grid.Row="0"
+                Grid.Column="1"
                 Background="{DynamicResource ControlBackgroundBrush}" BorderBrush="{DynamicResource WhiteColorBrush}" BorderThickness="{DynamicResource Bor}">
                 <wpf:ChromiumWebBrowser x:Name="ChromiumBrowser"
                                         Address="{Binding TrackTabUrl, FallbackValue=https://google.nl}">
@@ -152,7 +181,7 @@
             </Border>
 
 
-            <controls:SpotifyPlayer Grid.Row="1"
+            <controls:SpotifyPlayer Grid.Row="1" Grid.ColumnSpan="2"
                                     x:Name="SpotifyPlayer"/>
         </Grid>
 

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -53,12 +54,28 @@ namespace Guitarify.Wpf.ViewModels
                 else
                 {
                     FavouriteTabEntry = null;
+
                 }
+
+                // search
+                SearchResults.Clear();
+                var results = _guitarTabProvider.Search(_track.Artists[0].Name, _track.Name);
+
+                foreach (var result in results)
+                {
+                    SearchResults.Add(result);
+                }
+
+                OnPropertyChanged(nameof(SearchResults));
             }
         }
 
         public string TrackId => Track?.Uri;
-        public string TrackTabUrl => FavouriteTabEntry?.TabUrl ?? GetTrackUrl(Track);
+        public string TrackTabUrl => FavouriteTabEntry?.TabUrl;
+
+        private IGuitarTabDataProvider _guitarTabProvider { get; } = new UltimateGuitarScraper();
+
+        public ObservableCollection<IGuitarTabSearchResult> SearchResults { get; } = new ObservableCollection<IGuitarTabSearchResult>();
 
         public ICommand ToggleFavouriteTabCommand => new ParameterizedDelegateCommand((currentBrowserAddress) =>
         {
@@ -74,6 +91,11 @@ namespace Guitarify.Wpf.ViewModels
             }
         });
 
+        public ICommand OpenSearchResult => new ParameterizedDelegateCommand((searchResult) =>
+        {
+            _browser.Load(((IGuitarTabSearchResult)searchResult).Url);
+        });
+
         public ICommand OpenDevToolsCommand => new DelegateCommand(() =>
         {
             _browser.ShowDevTools();
@@ -84,27 +106,6 @@ namespace Guitarify.Wpf.ViewModels
         public TabViewerViewModel(IWebBrowser browser)
         {
             _browser = browser;
-        }
-
-
-        private static Regex SearchSanitizeRegex = new Regex(@"(\s*(?:(?:(?:\(|\[).+(?:\)|\]))|(?:-.+)))",
-                                                             RegexOptions.Compiled | RegexOptions.CultureInvariant);
-        private static string SearchUrl   = "https://www.ultimate-guitar.com/search.php?band_name=%artist%&song_name=%track%";
-
-        private string GetTrackUrl(FullTrack track)
-        {
-            if (track == null) return null;
-
-            var artistName = WebUtility.UrlEncode(SanitiseSearchString(track.Artists[0].Name));
-            var trackName  = WebUtility.UrlEncode(SanitiseSearchString(track.Name));
-            
-            var url = SearchUrl.Replace("%artist%", artistName).Replace("%track%", trackName);
-            return url;
-        }
-        private string SanitiseSearchString(string searchQuery)
-        {
-            searchQuery = SearchSanitizeRegex.Replace(searchQuery, "");
-            return searchQuery.Trim();
         }
     }
 }

@@ -44,6 +44,11 @@ namespace Guitarify.Wpf
 
             ChromiumBrowser.FrameLoadEnd += ChromiumBrowserOnFrameLoadEnd;
             Loaded += OnLoaded;
+
+            SearchResultsList.ItemsSource = _viewModel.SearchResults;
+            CollectionView view = (CollectionView) CollectionViewSource.GetDefaultView(SearchResultsList.ItemsSource);
+            var groupDescription = new PropertyGroupDescription("ArtistName");
+            view.GroupDescriptions.Add(groupDescription);
         }
 
         private void ChromiumBrowserOnFrameLoadEnd(object sender, FrameLoadEndEventArgs e)
@@ -91,6 +96,15 @@ namespace Guitarify.Wpf
             ChromiumBrowser.RequestHandler = new AdBlockRequestHandler();
             UpdateTrack();
             //ChromiumBrowser.ShowDevTools();
+        }
+
+        private void SearchResultsList_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (e.AddedItems.Count == 0) return;
+            var currentItem = (e.AddedItems[0]) as IGuitarTabSearchResult;
+            if (currentItem == null) return;
+
+            ChromiumBrowser.Load(currentItem.Url);
         }
     }
 }

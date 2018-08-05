@@ -37,7 +37,8 @@ namespace Guitarify.Wpf.ViewModels
             get => _currentTrack;
             set
             {
-                if (Equals(value, _currentTrack)) return;
+                if (Equals(value?.Id, _currentTrack?.Id)) return;
+                
                 _currentTrack = value;
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(TrackId));
